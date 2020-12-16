@@ -1,37 +1,32 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using CodeWorks.Auth0Provider;
 using latefall2020_dotnet_bloggr.Models;
 using latefall2020_dotnet_bloggr.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace latefall2020_dotnet_bloggr.Controllers
 {
   [ApiController]
-  [Route("[controller]")]
-  public class ProfileController : ControllerBase
+  [Route("api/[controller]")]
+  public class CompanyBlogsController : ControllerBase
   {
-    private readonly ProfilesService _ps;
-    private readonly BlogsService _bs;
+    private readonly CompanyBlogsService _cbs;
 
-    public ProfileController(ProfilesService ps, BlogsService bs)
+    public CompanyBlogsController(CompanyBlogsService cbs)
     {
-      _ps = ps;
-      _bs = bs;
+      _cbs = cbs;
     }
 
-    [HttpGet]
+    [HttpPost]
     [Authorize]
-    public async Task<ActionResult<Profile>> Get()
+    public async Task<ActionResult<CompanyBlog>> Post([FromBody] CompanyBlog newCb)
     {
       try
       {
         Profile userInfo = await HttpContext.GetUserInfoAsync<Profile>();
-        return Ok(_ps.GetOrCreateProfile(userInfo));
+        newCb.CreatorId = userInfo.Id;
+        return Ok(_cbs.Create(newCb));
       }
       catch (System.Exception e)
       {
@@ -39,19 +34,22 @@ namespace latefall2020_dotnet_bloggr.Controllers
       }
     }
 
-    [HttpGet("{id}/blogs")]
-    public async Task<ActionResult<Profile>> GetBlogsByProfile(string id)
+    [Authorize]
+    [HttpDelete("{id}")]
+    public async Task<ActionResult<string>> Delete(int id)
     {
       try
       {
         Profile userInfo = await HttpContext.GetUserInfoAsync<Profile>();
-        return Ok(_bs.GetBlogsByProfile(id, userInfo?.Id));
+        return Ok(_cbs.Delete(id, userInfo.Id));
       }
       catch (System.Exception e)
       {
-        return BadRequest(e.Message);
-      }
 
+        return BadRequest(e.Message);
+
+      }
     }
+
   }
 }
